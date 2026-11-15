@@ -1,20 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Building2, CircleHelp, ClipboardCheck, Droplets, FileSearch, Landmark, Megaphone, Radio, RotateCcw, ShieldAlert, Users, Wallet } from 'lucide-react'
+import { consume, type Bootstrap, type Campaign, type City, type Frame, type Mode, type Ready, type Stimulus } from './protocol'
 import './style.css'
-
-type Mode = 'demo' | 'flywire'
-type Issue = {title: string; office: string; brief: string}
-type City = {day: number; treasury: number; corruption: number; satisfaction: number; audit: number}
-type Metric = Exclude<keyof City, 'day'>
-type Result = {type: 'result'; winner: number | null; ruling: {title: string; quote: string; consequence: string}; state: City; changes: Record<Metric, number>; ending: string | null}
-type Frame = {type: 'frame'; elapsed: number; counts: number[]; spikes: number; active: number; events: [number, number][]}
-type Ready = {type: 'ready'; neurons: number; duration: number; score_until: number; panel_size: number; root_ids: string[][] | null}
-type Stimulus = {type: 'stimulus'; rates: number[]; mode: Mode}
-type Event = Frame | Ready | Stimulus | Result | {type:'error'; message:string}
-type Bootstrap = {state: City; max_days: number; issues: Record<string, Issue>; flywire: {available: boolean; reason: string | null}}
-type Log = {day: number; issue: string; mode: Mode; result: Result}
-type Campaign = {city: City; log: Log[]}
 
 const icons = {water: Droplets, contract: Building2, hotel: Landmark, audit: FileSearch, protest: Megaphone}
 const order = ['water', 'contract', 'hotel', 'audit', 'protest'] as (keyof typeof icons)[]
@@ -31,36 +19,6 @@ function prior(initial: City): Campaign {
     if (saved && Array.isArray(saved.log) && saved.city && saved.city.day === saved.log.length+1) return saved
   } catch { /* optional browser storage */ }
   return {city: initial, log: []}
-}
-
-async function consume(response: Response, handle: (e: Event) => void) {
-  if (!response.ok) {
-    const body = await response.json().catch(() => null)
-    throw new Error(typeof body?.detail === 'string' ? body.detail : 'No se pudo abrir el ensayo. Revisa la conexión local.')
-  }
-  if (!response.body) throw new Error('El navegador no recibió el registro.')
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
-  let buffer = '', hasResult = false
-  try {
-    while (true) {
-      const {value, done} = await reader.read()
-      if (done) break
-      buffer += value
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-      for (const line of lines) {
-        if (!line) continue
-        const event = JSON.parse(line) as Event
-        if (event.type === 'error') throw new Error(event.message)
-        handle(event)
-        hasResult ||= event.type === 'result'
-      }
-    }
-    if (!hasResult) throw new Error('El ensayo se interrumpió. El expediente sigue abierto.')
-  } finally {
-    await reader.cancel().catch(() => {})
-    reader.releaseLock()
-  }
 }
 
 function Raster({events, elapsed, duration, scoreUntil, panelSize}: {events: Frame['events']; elapsed: number; duration: number; scoreUntil: number; panelSize: number}) {
@@ -140,7 +98,7 @@ function App() {
     <header className="top">
       <div className="wrap top-inner">
         <a className="brand" href="#inicio"><span className="crest"><Landmark size={19}/></span> Municipio de Bahía Mosca</a>
-        <button className="guide" onClick={() => help.current?.showModal()}><CircleHelp size={16}/> Cómo jugar</button>
+        <div className="edition-links"><a href="/3d/">Edición 3D</a><button className="guide" onClick={() => help.current?.showModal()}><CircleHelp size={16}/> Cómo jugar</button></div>
       </div>
     </header>
     <main id="inicio">
