@@ -121,3 +121,21 @@ dialog p { margin: 12px 0; line-height: 1.42 }
   .screen-top { top: 8px; left: 8px; right: 8px }
   .caption { bottom: 8px; left: 8px; right: 8px; padding: 6px 9px }
 }
+@media (pointer: coarse) {
+  .program-status button, .outcome button, dialog button, .nav button, .lab-head select {
+    min-height: 44px;
+  }
+  .nav button { min-width: 44px }
+  .lab-head select { font-size: 16px }
+}
+@media (max-width: 425px) {
+  .mast { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)) }
+  .program { align-items: flex-start; flex-wrap: wrap }
+  .program-status { justify-content: flex-start }
+  .screen { min-height: 360px; min-height: min(440px, 60dvh) }
+  .agenda > span { white-space: normal; text-align: center; overflow-wrap: anywhere }
+  .city-strip > div { padding-inline: 8px; gap: 5px }
+  .city-strip small { white-space: normal; text-align: right }
+  footer { padding-bottom: env(safe-area-inset-bottom) }
+}
+
