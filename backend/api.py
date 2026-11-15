@@ -1,11 +1,15 @@
 """Local API: stream measured neural activity, resolve exactly once after completion."""
 from dataclasses import asdict
+import base64
+import binascii
+import hmac
 import json
 import logging
+import os
 from typing import Annotated, Literal
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -13,6 +17,28 @@ from . import game, neural
 
 app = FastAPI(title="Señor Mosca")
 log = logging.getLogger(__name__)
+
+
+@app.middleware("http")
+async def optional_password(request: Request, call_next):
+    """Protect all routes when explicitly configured; local use remains unchanged."""
+    password = os.environ.get("MOSCA_PASSWORD")
+    if password:
+        auth = request.headers.get("authorization", "")
+        valid = False
+        try:
+            scheme, encoded = auth.split(" ", 1)
+            raw = base64.b64decode(encoded, validate=True)
+            username, supplied = raw.split(b":", 1)
+            valid = (scheme.lower() == "basic" and hmac.compare_digest(username, b"mosca")
+                     and hmac.compare_digest(supplied, password.encode("utf-8")))
+        except (ValueError, binascii.Error):
+            pass
+        if not valid:
+            return Response("Authentication required", status_code=401,
+                            headers={"WWW-Authenticate": 'Basic realm="Senor Mosca", charset="UTF-8"',
+                                     "Cache-Control": "no-store"})
+    return await call_next(request)
 
 
 class City(BaseModel):
@@ -80,3 +106,4 @@ def turn(request: Turn):
 
 if (dist := neural.ROOT/"dist").is_dir():
     app.mount("/", StaticFiles(directory=dist, html=True), name="game")
+

@@ -56,9 +56,10 @@ export function Theater({activity}: {activity: StageState}) {
   useEffect(() => {
     const canvas = surface.current!
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const mobile = window.matchMedia('(pointer: coarse)').matches
     let renderer: T.WebGLRenderer
     try {
-      renderer = new T.WebGLRenderer({canvas, antialias: true, powerPreference:'high-performance'})
+      renderer = new T.WebGLRenderer({canvas, antialias: !mobile, powerPreference: mobile ? 'low-power' : 'high-performance'})
     } catch {
       setAvailable(false)
       return
@@ -80,7 +81,7 @@ export function Theater({activity}: {activity: StageState}) {
     sun.shadow.camera.top = 25
     sun.shadow.camera.bottom = -27
     sun.shadow.normalBias = .04
-    sun.shadow.mapSize.set(1024,1024)
+    sun.shadow.mapSize.set(mobile ? 512 : 1024,mobile ? 512 : 1024)
     scene.add(sun,sun.target)
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = T.PCFShadowMap
@@ -114,7 +115,7 @@ export function Theater({activity}: {activity: StageState}) {
     function resize() {
       const width = Math.max(1,canvas.clientWidth)
       const height = Math.max(1,canvas.clientHeight)
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5))
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio,mobile ? 1 : 1.5))
       renderer.setSize(width,height,false)
       const aspect = width / height
       const vertical = Math.max(5.75,9.7/aspect)
@@ -139,7 +140,7 @@ export function Theater({activity}: {activity: StageState}) {
     function draw(now: number) {
       if (disposed) return
       animation = requestAnimationFrame(draw)
-      if (now-previousFrame < 48) return
+      if (now-previousFrame < (mobile ? 67 : 48)) return
       const seconds = now/1000
       const next = latest.current
       const {phase:nextPhase, issue, counts, results} = next
@@ -205,3 +206,4 @@ export function Theater({activity}: {activity: StageState}) {
     {!available && <p className="graphics-note" role="status">WebGL 2 no está disponible. Los expedientes siguen por escrito.</p>}
   </div>
 }
+
