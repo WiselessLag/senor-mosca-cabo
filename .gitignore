@@ -1,0 +1,9 @@
+/.venv/
+/node_modules/
+/dist/
+/upstream/
+/test-results/
+/playwright-report/
+__pycache__/
+*.pyc
+*.log
