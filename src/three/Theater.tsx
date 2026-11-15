@@ -17,6 +17,36 @@ function animateWings(wings: T.Group[], time: number, strength: number) {
   })
 }
 
+function batchScenery(scene: T.Scene, moving: Set<T.Object3D>) {
+  const batches = new Map<string, T.Mesh[]>()
+  scene.updateMatrixWorld(true)
+  scene.traverse(object => {
+    if (!(object instanceof T.Mesh) || Array.isArray(object.material)) return
+    let ancestor: T.Object3D | null = object
+    while (ancestor) {
+      if (moving.has(ancestor)) return
+      ancestor = ancestor.parent
+    }
+    const key = [object.geometry.id,object.material.id,object.castShadow,object.receiveShadow].join(':')
+    const batch = batches.get(key)
+    if (batch) batch.push(object)
+    else batches.set(key,[object])
+  })
+  for (const meshes of batches.values()) {
+    if (meshes.length < 3) continue
+    const first = meshes[0]
+    const instances = new T.InstancedMesh(first.geometry,first.material,meshes.length)
+    instances.castShadow = first.castShadow
+    instances.receiveShadow = first.receiveShadow
+    meshes.forEach((mesh,index) => {
+      instances.setMatrixAt(index,mesh.matrixWorld)
+      mesh.removeFromParent()
+    })
+    instances.computeBoundingSphere()
+    scene.add(instances)
+  }
+}
+
 export function Theater({activity}: {activity: StageState}) {
   const surface = useRef<HTMLCanvasElement>(null)
   const latest = useRef(activity)
@@ -61,11 +91,23 @@ export function Theater({activity}: {activity: StageState}) {
 
     const town = makeLandscape(scene)
     const hearing = makeHearing(scene)
+    hearing.visitor.root.traverse(object => { if (object instanceof T.Mesh) object.castShadow = false })
+    const contactShadow = new T.Mesh(new T.CircleGeometry(.55,16),
+      new T.MeshBasicMaterial({color:'#463b2e',transparent:true,opacity:.26,depthWrite:false}))
+    contactShadow.rotation.x = -Math.PI/2
+    contactShadow.position.y = .048
+    hearing.visitor.root.add(contactShadow)
+    batchScenery(scene,new Set([
+      ...town.boats,...Object.values(town.aftermath).flat(),
+      hearing.mayor.root,hearing.visitor.root,hearing.folder,...hearing.lamps,
+    ]))
     const start = new T.Vector3(7.3,.26,3.35)
     const finish = new T.Vector3(2.92,.26,1.78)
     let phase: Phase | undefined
     let changedAt = 0
     let previousFrame = 0
+    let lastActivity: StageState | undefined
+    let needsPaint = true
     let animation = 0
     let disposed = false
 
@@ -81,6 +123,7 @@ export function Theater({activity}: {activity: StageState}) {
       camera.top = vertical
       camera.bottom = -vertical
       camera.updateProjectionMatrix()
+      needsPaint = true
     }
 
     const sizeObserver = new ResizeObserver(resize)
@@ -96,20 +139,24 @@ export function Theater({activity}: {activity: StageState}) {
     function draw(now: number) {
       if (disposed) return
       animation = requestAnimationFrame(draw)
-      if (now-previousFrame < 31) return
-      previousFrame = now
+      if (now-previousFrame < 48) return
       const seconds = now/1000
-      const {phase:nextPhase, issue, counts, results} = latest.current
+      const next = latest.current
+      const {phase:nextPhase, issue, counts, results} = next
       if (phase !== nextPhase) {
         phase = nextPhase
         changedAt = seconds
-        renderer.shadowMap.needsUpdate = true
       }
       const t = Math.min(1,(seconds-changedAt)/1.65)
+      if (!needsPaint && lastActivity===next && (reduced || t===1)) return
+      previousFrame = now
+      needsPaint = false
+      lastActivity = next
       const eased = t*t*(3-2*t)
       const visitorPosition = phase === 'brief' ? eased : phase === 'trial' ? 1 :
         phase === 'ruling' ? 1-Math.max(0,(eased-.36)/.64) : 0
-      hearing.visitor.root.position.lerpVectors(start,finish,reduced ? Number(visitorPosition > .5) : visitorPosition)
+      const position = reduced ? Number(phase==='brief' || phase==='trial') : visitorPosition
+      hearing.visitor.root.position.lerpVectors(start,finish,position)
       hearing.visitor.root.rotation.y = phase==='ruling' && visitorPosition<.75 ? 1.06 : -.99
       hearing.visitor.figure.position.y = reduced ? 0 : Math.sin(seconds*16)*.052*(t<1?1:.25)
       const flyMotion = phase === 'trial' ? .17 : phase === 'ruling' ? .09 : .035
@@ -141,6 +188,7 @@ export function Theater({activity}: {activity: StageState}) {
       canvas.removeEventListener('webglcontextlost',fallback)
       scene.traverse(object => {
         if (!(object instanceof T.Mesh)) return
+        if (object instanceof T.InstancedMesh) object.dispose()
         object.geometry.dispose()
         for (const material of Array.isArray(object.material)?object.material:[object.material]) {
           if ('map' in material && material.map instanceof T.Texture) material.map.dispose()
