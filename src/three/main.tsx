@@ -104,7 +104,7 @@ function App() {
       setPhase(saved.log.at(-1)?.result.ending ? 'complete' : 'brief')
     }).catch(() => {
       if (!controller.signal.aborted) {
-        setError('El servidor local no responde.')
+        setError('No se pudo abrir la sesión.')
         setPhase('error')
       }
     })
