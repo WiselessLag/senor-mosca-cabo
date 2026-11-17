@@ -14,7 +14,7 @@ export type Campaign = {city: City; log: Log[]}
 export async function consume(response: Response, handle: (e: Event) => void) {
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    throw new Error(typeof body?.detail === 'string' ? body.detail : 'No se pudo abrir el ensayo. Revisa la conexión local.')
+    throw new Error(typeof body?.detail === 'string' ? body.detail : 'No se pudo abrir el ensayo. Intenta de nuevo.')
   }
   if (!response.body) throw new Error('El navegador no recibió el registro.')
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()

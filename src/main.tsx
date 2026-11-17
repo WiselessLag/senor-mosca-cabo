@@ -59,7 +59,7 @@ function App() {
     }).then(data => {
       setMeta(data)
       setCampaign(prior(data.state))
-    }).catch(() => { if (!controller.signal.aborted) setError('El servidor local no responde. Inícialo y recarga la página.') })
+    }).catch(() => { if (!controller.signal.aborted) setError('No se pudo abrir la sesión. Recarga la página para reintentar.') })
     return () => controller.abort()
   }, [])
   useEffect(() => {
