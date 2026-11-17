@@ -111,7 +111,28 @@ def full(rates) -> Circuit:
 
     params = module.default_params.copy()
     b.defaultclock.dt = 0.1*b.ms
-    neurons, syn, monitor = module.create_model(comp, conn, params)
+    # These are the only connectivity columns used by the upstream model.
+    # Reading them selectively avoids loading unused 15-million-row columns.
+    connections = pd.read_parquet(conn, columns=[
+        "Presynaptic_Index", "Postsynaptic_Index", "Excitatory x Connectivity",
+    ])
+    neurons = b.NeuronGroup(
+        N=len(roots), model=params["eqs"], method="linear",
+        threshold=params["eq_th"], reset=params["eq_rst"], refractory="rfc",
+        name="default_neurons", namespace=params,
+    )
+    neurons.v = params["v_0"]
+    neurons.g = 0
+    neurons.rfc = params["t_rfc"]
+    syn = b.Synapses(
+        neurons, neurons, "w : volt", on_pre="g += w",
+        delay=params["t_dly"], name="default_synapses",
+    )
+    syn.connect(i=connections["Presynaptic_Index"].values,
+                j=connections["Postsynaptic_Index"].values)
+    syn.w = connections["Excitatory x Connectivity"].values * params["w_syn"]
+    del connections
+    monitor = b.SpikeMonitor(neurons)
     neurons.rfc[targets] = 0*b.ms  # same input override as upstream poi()
     pulses, inject = drive(neurons, targets, rates, params["w_syn"]*params["f_poi"], neurons.clock,
                            latency_scale=0.9)
