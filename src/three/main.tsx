@@ -243,7 +243,32 @@ function App() {
           return <div key={id}><Icon size={19}/><span>{label}<b>{value===undefined?'—':id==='treasury'?'$'+fmt.format(value/1000)+' M':value+'%'}</b></span>{trend&&<small>{trend}</small>}</div>
         })}
       </section>
-      <footer><span>Sátira ficticia · Bahía Mosca</span>{campaign && campaign.log.length>0 && <details><summary>Bitácora ({campaign.log.length})</summary><ol>{[...campaign.log].reverse().map(entry => <li key={entry.day}>Día {entry.day} · {entry.result.ruling.title}</li>)}</ol></details>}</footer>
+      <section className="decision-log" aria-labelledby="decision-log-title">
+        <div className="decision-log-heading">
+          <h2 id="decision-log-title">Bitácora de decisiones</h2>
+          <span>{campaign?.log.length ?? 0} de {meta?.max_days ?? 10} decisiones</span>
+        </div>
+        {campaign?.log.length ? <ol>
+          {[...campaign.log].reverse().map(entry => <li key={entry.day}>
+            <div className="decision-meta">
+              <span>Día {entry.day}</span>
+              <span>{meta?.issues[entry.issue]?.title ?? districts[entry.issue as District]?.name ?? entry.issue}</span>
+              <span>{entry.mode === 'flywire' ? 'FlyWire v783' : 'Demo'}</span>
+            </div>
+            <h3>{entry.result.ruling.title}</h3>
+            <p>“{entry.result.ruling.quote}”</p>
+            <p className="decision-consequence">{entry.result.ruling.consequence}</p>
+            <div className="decision-changes" aria-label="Cambios en el municipio">
+              {measures.map(({id,label}) => {
+                const change = entry.result.changes[id]
+                const formatted = id === 'treasury' ? '$' + fmt.format(Math.abs(change) / 1000) + ' M' : Math.abs(change) + ' pp'
+                return <span key={id}>{label} <b>{change > 0 ? '+' : change < 0 ? '−' : ''}{formatted}</b></span>
+              })}
+            </div>
+          </li>)}
+        </ol> : <p className="decision-empty">Las decisiones del alcalde aparecerán aquí al terminar cada expediente.</p>}
+      </section>
+      <footer><span>Sátira ficticia · Bahía Mosca</span></footer>
     </main>
     <dialog ref={help}>
       <h2>Una sesión automática</h2>

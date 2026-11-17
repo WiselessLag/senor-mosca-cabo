@@ -91,6 +91,19 @@ h2 { font: 700 35px/.97 "Barlow Condensed",sans-serif; letter-spacing: -.008em }
 .city-strip span { color: var(--muted); font-size: 13px }
 .city-strip b { display: block; color: #f8ecda; font: 700 24px/.98 "Barlow Condensed",sans-serif }
 .city-strip small { margin-left: auto; color: #f7dfa9; white-space: nowrap; font-size: 12px }
+.decision-log { margin-top: 18px; padding: 18px; background: #1c2a30; border: 1px solid var(--border); border-radius: 7px }
+.decision-log-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px }
+.decision-log-heading h2 { margin: 0; color: #f8ecda; font: 700 27px/1 "Barlow Condensed",sans-serif }
+.decision-log-heading span, .decision-empty { color: var(--muted); font-size: 14px }
+.decision-log ol { display: grid; gap: 10px; margin: 15px 0 0; padding: 0; list-style: none }
+.decision-log li { padding: 13px; background: #152428; border: 1px solid #405552; border-radius: 5px }
+.decision-meta { display: flex; gap: 12px; flex-wrap: wrap; color: #b7d6c4; font-size: 13px }
+.decision-log h3 { margin: 8px 0 4px; color: #f4ce82; font: 700 22px/1.05 "Barlow Condensed",sans-serif }
+.decision-log li p { margin: 5px 0; line-height: 1.35 }
+.decision-consequence { color: var(--muted) }
+.decision-changes { display: flex; flex-wrap: wrap; gap: 5px 16px; margin-top: 10px; color: var(--muted); font-size: 13px }
+.decision-changes b { color: #f7dfa9; font-weight: 600 }
+.decision-empty { margin: 14px 0 0 }
 footer { margin: 13px 0 22px; display: flex; align-items: start; justify-content: space-between; gap: 9px; color: var(--muted); font-size: 13px }
 footer details { text-align: right }
 footer ol { padding: 0; list-style: none; line-height: 1.45 }
