@@ -2,11 +2,13 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "installCommand": "npm ci",
-  "buildCommand": "npm run build",
+  "buildCommand": "bash scripts/vercel-flywire-build.sh",
   "outputDirectory": "dist",
   "functions": {
     "api/*.py": {
-      "excludeFiles": "{dist/**,node_modules/**,tests/**,upstream/**}"
+      "includeFiles": "upstream/**",
+      "excludeFiles": "{dist/**,node_modules/**,tests/**}",
+      "maxDuration": 300
     }
   }
 }
